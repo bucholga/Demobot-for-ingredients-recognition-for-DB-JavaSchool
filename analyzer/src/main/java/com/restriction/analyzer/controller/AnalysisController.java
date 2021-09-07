@@ -4,6 +4,7 @@ import com.restriction.analyzer.services.AnalysisManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,7 +34,9 @@ public class AnalysisController {
     }
 
     @GetMapping("/analyze-ingredients")
-    public Map<Integer, List<String>> analyseIngredients(List<String> input, long chatId) {
+    public Map<Integer, List<String>> analyseIngredients(@RequestBody List<String> input) {
+        long chatId = Long.parseLong(input.get(0));
+        input.remove(0);
         return analysisManager.analysis(input, chatId);
     }
 }
