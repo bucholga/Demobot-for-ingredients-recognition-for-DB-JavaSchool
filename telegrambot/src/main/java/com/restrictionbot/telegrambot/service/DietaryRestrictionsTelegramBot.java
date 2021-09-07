@@ -2,7 +2,7 @@ package com.restrictionbot.telegrambot.service;
 
 import com.restrictionbot.telegrambot.models.UserIngredients;
 import lombok.SneakyThrows;
-import org.apache.http.HttpEntity;
+//import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -11,6 +11,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.annotation.Configurable;
 
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -20,8 +23,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -47,18 +53,41 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
+        System.out.println("Telegram bot is working");
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
             String chatId = update.getMessage().getChatId().toString();
             users.add(new UserIngredients(chatId));
 
             java.io.File file = downloadPhotoByFilePath(getFilePath(getPhoto(update)));
 
-            //BufferedImage img = ImageIO.read(file);
+            BufferedImage img = ImageIO.read(file);
             execute(new SendMessage(chatId, "Analyzing image..."));
 
-            //this.execute(this.sendInlineKeyBoardMessage(chatId, ingredientsFromImage));
+            this.execute(this.sendInlineKeyBoardMessage(chatId, getIngredientsHTTPRequest(img)));
+        }
+        if(update.hasCallbackQuery()){
+            execute(correctIngredient(update.getCallbackQuery().getData().toString(), update.getCallbackQuery().getMessage().getChatId().toString()));
 
         }
+
+        if (update.hasMessage() && update.getMessage().hasText()){
+
+            String text = update.getMessage().getText();
+            String chatId = update.getMessage().getChatId().toString();
+            List<String> textList = List.of(text.split("_"));
+
+            if (textList.size() == 2){
+                for (UserIngredients user : users){
+                    if (user.getChatId().equals(chatId)){
+
+                        user.fixIngredient(textList.get(1));
+                        execute(sendInlineKeyBoardMessage(chatId,user.getEntities()));
+                    }
+                }
+
+            }
+        }
+
     }
     public PhotoSize getPhoto(Update update) {
         // Check that the update contains a message and the message has a photo
@@ -105,54 +134,54 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    public void sendHTTPRequest(BufferedImage img){
-        /*HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.valueOf(MediaType.MULTIPART_FORM_DATA));
-        MultiValueMap<String, Object> body
-                = new LinkedMultiValueMap<>();
-        body.add("file", img);
-        HttpEntity<MultiValueMap<String, Object>> requestEntity
-                = new HttpEntity<>(body, headers);
-
+    public List<String> getIngredientsHTTPRequest(BufferedImage img){
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate
-               .postForEntity("http://analizer/parse-image", requestEntity, String.class);*/
-        /*CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpPost uploadFile = new HttpPost("http://parser/parse-image");
-        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-        builder.addTextBody("field1", "image", ContentType.TEXT_PLAIN);
+        HttpEntity<BufferedImage> request = new HttpEntity<BufferedImage>(img);
+        ResponseEntity<List<String>> response = restTemplate
+                .exchange("http://parser/parse-image", HttpMethod.POST, request, new ParameterizedTypeReference<List<String>>(){});
 
-        // This attaches the file to the POST:
-        builder.addBinaryBody(
-                "file",
-                new FileInputStream(img),
-                ContentType.APPLICATION_OCTET_STREAM,
-                img.getName()
-        );
 
-        HttpEntity multipart = (HttpEntity) builder.build();
-        uploadFile.setEntity(multipart);
-        CloseableHttpResponse response = httpClient.execute(uploadFile);
-        CloseableHttpResponse responseEntity = (CloseableHttpResponse) response;
-        HttpEntity result = responseEntity.getEntity();
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String[]> response1 =
-                restTemplate.getForEntity(
-                        "http://parser/",
-                        String[].class);
-        String[] ingredients = response1.getBody();*/
-        /*RestTemplate restTemplate = new RestTemplate();
-        HttpEntity request = new HttpEntity<BufferedImage>(img);
-        ResponseEntity<Foo> response = restTemplate
-                .exchange(fooResourceUrl, HttpMethod.POST, request, Foo.class);
+        List<String> responseBody = response.getBody();
+        return responseBody;
 
-        assertThat(response.getStatusCode(), is(HttpStatus.CREATED));
+    }
 
-        Foo foo = response.getBody();
+    public SendMessage sendInlineKeyBoardMessage(String chatId, List<String> ingredientsInfo) {
+        for (UserIngredients user:users){
+            if (user.getChatId().equals(chatId)){
+                user.setEntities(ingredientsInfo);
+            }
+        }
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> keyboardButtonsRow1 = new ArrayList<>();
+        for (String ingredient : ingredientsInfo) {//todo long amount
+            InlineKeyboardButton temp = new InlineKeyboardButton();
+            temp.setText(ingredient);
+            temp.setCallbackData(ingredient);
+            keyboardButtonsRow1.add(temp);
+        }
 
-        assertThat(foo, notNullValue());
-        assertThat(foo.getName(), is("bar"));*/
+        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+        rowList.add(keyboardButtonsRow1);
 
+        inlineKeyboardMarkup.setKeyboard(rowList);
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setText("Проверьте состав вашего продукта");
+        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
+        return sendMessage;
+    }
+    public SendMessage correctIngredient(String incorrectOne, String chatId){
+        for (UserIngredients user:users){
+            if (user.getChatId().equals(chatId)){
+                user.setIncorrectProduct(incorrectOne);
+            }
+        }
+
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setText("Введите правильное название продукта в формате correct_названиеПродукта");
+        sendMessage.setChatId(chatId);
+        return sendMessage;
     }
 
 }

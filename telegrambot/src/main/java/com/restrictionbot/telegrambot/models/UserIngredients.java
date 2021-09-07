@@ -1,8 +1,10 @@
 package com.restrictionbot.telegrambot.models;
 
+import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
-
+@Data
 public class UserIngredients {
     private List<String> entities = new ArrayList<String>();
     private String chatId;
