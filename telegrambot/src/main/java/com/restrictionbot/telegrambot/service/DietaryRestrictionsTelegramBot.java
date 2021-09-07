@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 @Configurable
 public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     private static final String botUserName = "JavaSchoolTestBot";
-    private static final String token = "1993202006:AAFrRNzZwWHn7HeSF8Pp-4DdBr9MfucZFss";
+    private static final String token = "1973421485:AAHuiDhX63Z42vAxsLTd2WR3N4V3LQftjL4";
     @Override
     public String getBotUsername() {
         return botUserName;
@@ -62,7 +62,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
             BufferedImage img = ImageIO.read(file);
             execute(new SendMessage(chatId, "Analyzing image..."));
 
-            this.execute(this.sendInlineKeyBoardMessage(chatId, igredientsHTTPRequest(img)));
+            this.execute(this.sendInlineKeyBoardMessage(chatId, igredientsHTTPRequest(file)));
         }
         if(update.hasCallbackQuery()){
             execute(correctIngredient(update.getCallbackQuery().getData().toString(), update.getCallbackQuery().getMessage().getChatId().toString()));
@@ -147,9 +147,9 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    public List<String> igredientsHTTPRequest(BufferedImage img){
+    public List<String> igredientsHTTPRequest(java.io.File img){
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<BufferedImage> request = new HttpEntity<BufferedImage>(img);
+        HttpEntity<java.io.File> request = new HttpEntity<>(img);
         ResponseEntity<List<String>> response = restTemplate
                 .exchange("http://parser/parse-image", HttpMethod.POST, request, new ParameterizedTypeReference<List<String>>(){});
 
