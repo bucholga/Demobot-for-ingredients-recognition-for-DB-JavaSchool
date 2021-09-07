@@ -17,8 +17,8 @@ public class UserDAOImpl implements UserDAO {
     @Autowired
     SessionFactory sessionFactory;
 
-    @Override
     @Transactional
+    @Override
     public User getUser(long userId) {
         Session session = sessionFactory.openSession();
         User user = session.get(User.class, userId);

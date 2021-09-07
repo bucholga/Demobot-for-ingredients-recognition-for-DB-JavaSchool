@@ -4,7 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
@@ -21,7 +20,6 @@ public class HibernateConfig {
         sessionFactory.setDataSource(dataSource());
         sessionFactory.setPackagesToScan("com.restriction.analyser.model");
         sessionFactory.setHibernateProperties(hibernateProperties());
-
         return sessionFactory;
     }
 
@@ -32,12 +30,11 @@ public class HibernateConfig {
         dataSource.setUrl("jdbc:postgresql://localhost:5432/postgres");
         dataSource.setUsername("postgres");
         dataSource.setPassword("12345678");
-
         return dataSource;
     }
 
     @Bean
-    public PlatformTransactionManager hibernateTransactionManager() {
+    public HibernateTransactionManager hibernateTransactionManager() {
         HibernateTransactionManager transactionManager
                 = new HibernateTransactionManager();
         transactionManager.setSessionFactory(sessionFactory().getObject());
