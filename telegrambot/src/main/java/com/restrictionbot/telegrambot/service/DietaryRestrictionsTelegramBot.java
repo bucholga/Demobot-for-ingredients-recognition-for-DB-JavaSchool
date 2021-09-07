@@ -30,10 +30,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Configurable
@@ -63,7 +62,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
             BufferedImage img = ImageIO.read(file);
             execute(new SendMessage(chatId, "Analyzing image..."));
 
-            this.execute(this.sendInlineKeyBoardMessage(chatId, getIngredientsHTTPRequest(img)));
+            this.execute(this.sendInlineKeyBoardMessage(chatId, igredientsHTTPRequest(img)));
         }
         if(update.hasCallbackQuery()){
             execute(correctIngredient(update.getCallbackQuery().getData().toString(), update.getCallbackQuery().getMessage().getChatId().toString()));
@@ -85,6 +84,20 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
                     }
                 }
 
+            }
+            else
+            {
+                if (text.equalsIgnoreCase("correct") ){
+                    for (UserIngredients user : users){
+                        if (user.getChatId().equals(chatId)){
+                            List<String> listForRequest = new ArrayList<String>();
+                            listForRequest.add(chatId);
+                            List<String> newList = Stream.concat(listForRequest.stream(), user.getEntities().stream())
+                                    .collect(Collectors.toList());
+                            execute(sendIngredientsWithAllergens(analyzeIngredients(newList), chatId));
+                        }
+                    }
+                }
             }
         }
 
@@ -134,7 +147,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    public List<String> getIngredientsHTTPRequest(BufferedImage img){
+    public List<String> igredientsHTTPRequest(BufferedImage img){
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<BufferedImage> request = new HttpEntity<BufferedImage>(img);
         ResponseEntity<List<String>> response = restTemplate
@@ -146,6 +159,26 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
 
     }
 
+    public SendMessage sendIngredientsWithAllergens(Map<Integer, List<String>> analyzedIngredients, String chatId){
+        SendMessage sendMessage = new SendMessage();
+        String messageText = "<b>" + "Аллергенные ингредиенты " + analyzedIngredients.get(0) + "<b>";
+        sendMessage.setText(messageText);
+        sendMessage.setChatId(chatId);
+        return sendMessage;
+    }
+
+    public Map<Integer, List<String>> analyzeIngredients(List<String> ingredients){
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity<List<String>> request = new HttpEntity<List<String>>(ingredients);
+        ResponseEntity<Map<Integer, List<String>>> response = restTemplate
+                .exchange("http://analyzer/analyze-ingredients", HttpMethod.POST, request, new ParameterizedTypeReference<Map<Integer, List<String>>>(){});
+
+
+        Map<Integer, List<String>> responseBody = response.getBody();
+        return responseBody;
+
+    }
+
     public SendMessage sendInlineKeyBoardMessage(String chatId, List<String> ingredientsInfo) {
         for (UserIngredients user:users){
             if (user.getChatId().equals(chatId)){
@@ -153,21 +186,28 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
             }
         }
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<InlineKeyboardButton> keyboardButtonsRow1 = new ArrayList<>();
-        for (String ingredient : ingredientsInfo) {//todo long amount
+        List<InlineKeyboardButton> keyboardButtonsRow =new ArrayList<>();
+        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+        int count = 0;
+        for (String ingredient : ingredientsInfo) {
+            if (count % 3 == 0 && count != 0){
+                rowList.add(keyboardButtonsRow);
+                keyboardButtonsRow = new ArrayList<>();
+            }
             InlineKeyboardButton temp = new InlineKeyboardButton();
             temp.setText(ingredient);
             temp.setCallbackData(ingredient);
-            keyboardButtonsRow1.add(temp);
+            keyboardButtonsRow.add(temp);
+            count++;
         }
-
-        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-        rowList.add(keyboardButtonsRow1);
+        if (count < 3){
+            rowList.add(keyboardButtonsRow);
+        }
 
         inlineKeyboardMarkup.setKeyboard(rowList);
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
-        sendMessage.setText("Проверьте состав вашего продукта");
+        sendMessage.setText("Проверьте состав вашего продукта, если все правильно, пришлите сообщение с текстом correct");
         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
         return sendMessage;
     }
