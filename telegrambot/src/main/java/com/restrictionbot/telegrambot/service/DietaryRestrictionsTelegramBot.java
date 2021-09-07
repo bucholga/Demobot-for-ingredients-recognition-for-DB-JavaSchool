@@ -150,7 +150,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<java.io.File> request = new HttpEntity<>(img);
         ResponseEntity<List<String>> response = restTemplate
-                .exchange("http://parser/parse-image", HttpMethod.POST, request, new ParameterizedTypeReference<List<String>>(){});
+                .exchange("http://localhost:8085/parser/parse-image", HttpMethod.POST, request, new ParameterizedTypeReference<List<String>>(){});
 
 
         List<String> responseBody = response.getBody();
@@ -170,7 +170,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<List<String>> request = new HttpEntity<List<String>>(ingredients);
         ResponseEntity<Map<Integer, List<String>>> response = restTemplate
-                .exchange("http://analyzer/analyze-ingredients", HttpMethod.POST, request, new ParameterizedTypeReference<Map<Integer, List<String>>>(){});
+                .exchange("http://localhost:8090/analyzer/analyze-ingredients", HttpMethod.POST, request, new ParameterizedTypeReference<Map<Integer, List<String>>>(){});
 
 
         Map<Integer, List<String>> responseBody = response.getBody();
@@ -206,7 +206,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
         inlineKeyboardMarkup.setKeyboard(rowList);
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
-        sendMessage.setText("Проверьте состав вашего продукта, если все правильно, пришлите сообщение с текстом correct");
+        sendMessage.setText("Проверьте состав вашего продукта, если все правильно, пришлите сообщение с текстом correct, если нет, нажмите на некорректное название");
         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
         return sendMessage;
     }

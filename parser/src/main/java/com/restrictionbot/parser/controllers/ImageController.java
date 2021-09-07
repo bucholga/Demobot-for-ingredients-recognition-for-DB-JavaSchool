@@ -1,6 +1,7 @@
 package com.restrictionbot.parser.controllers;
 
 
+import com.restrictionbot.parser.model.ParserManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,10 +19,10 @@ public class ImageController {
 
     @Autowired
     ParserManager parserManager;
-
     @PostMapping("/parse-image")
-    public List<String> parseImage(@RequestBody java.io.File image){
+    public List<String> parseImage(@RequestBody java.io.File file){
+        parserManager.getIngredientsFromImage(file);
         System.out.println("ParsingImage");
-        return List.of("aaaaaa", "asd");
+        return parserManager.getIngredientsFromImage(file);
     }
 }
