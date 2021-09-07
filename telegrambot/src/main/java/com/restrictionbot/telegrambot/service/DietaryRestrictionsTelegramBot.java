@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 @Configurable
 public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
     private static final String botUserName = "JavaSchoolTestBot";
-    private static final String token = "1973421485:AAHuiDhX63Z42vAxsLTd2WR3N4V3LQftjL4";
+    private static final String token = "1993202006:AAFrRNzZwWHn7HeSF8Pp-4DdBr9MfucZFss";
     @Override
     public String getBotUsername() {
         return botUserName;
@@ -59,7 +59,6 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
 
             java.io.File file = downloadPhotoByFilePath(getFilePath(getPhoto(update)));
 
-            BufferedImage img = ImageIO.read(file);
             execute(new SendMessage(chatId, "Analyzing image..."));
 
             this.execute(this.sendInlineKeyBoardMessage(chatId, igredientsHTTPRequest(file)));
