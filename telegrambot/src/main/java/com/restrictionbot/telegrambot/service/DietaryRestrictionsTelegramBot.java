@@ -153,7 +153,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
                 .exchange("http://parser/parse-image", HttpMethod.POST, request, new ParameterizedTypeReference<List<String>>(){});
 
 
-        List<String> responseBody = response.getBody();
+        List<String> responseBody = response.getBody();//
         return responseBody;
 
     }
