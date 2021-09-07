@@ -17,7 +17,7 @@ public class AnalysisController {
     @Autowired
     AnalysisManager analysisManager;
 
-    @GetMapping("/analyseIngredients")
+    @GetMapping("/analyze-ingredients")
     public Map<Integer, List<String>> analyseIngredients(List<String> input, long chatId) {
         return analysisManager.analysis(input, chatId);
     }
