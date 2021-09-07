@@ -13,9 +13,9 @@ spring:
     gateway:
       routes:
         - id: analyzer
-          uri: lb://analizer
+          uri: lb://analyzer
           predicates:
-            - Path=/analizer/**
+            - Path=/analyzer/**
         - id: parser
           uri: lb://parser
           predicates:
