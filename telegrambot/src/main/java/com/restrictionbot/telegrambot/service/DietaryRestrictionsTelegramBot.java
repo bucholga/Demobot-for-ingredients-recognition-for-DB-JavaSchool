@@ -89,10 +89,11 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
                 if (text.equalsIgnoreCase("correct") ){
                     for (UserIngredients user : users){
                         if (user.getChatId().equals(chatId)){
-                            List<String> listForRequest = new ArrayList<String>();
+                            ArrayList<String> listForRequest = new ArrayList<String>();
                             listForRequest.add(chatId);
-                            List<String> newList = Stream.concat(listForRequest.stream(), user.getEntities().stream())
+                            ArrayList<String> newList = (ArrayList<String>) Stream.concat(listForRequest.stream(), user.getEntities().stream())
                                     .collect(Collectors.toList());
+                            System.out.println(newList);
                             execute(sendIngredientsWithAllergens(analyzeIngredients(newList), chatId));
                         }
                     }
@@ -158,22 +159,22 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
 
     }
 
-    public SendMessage sendIngredientsWithAllergens(Map<Integer, List<String>> analyzedIngredients, String chatId){
+    public SendMessage sendIngredientsWithAllergens(Map<Integer, ArrayList<String>> analyzedIngredients, String chatId){
         SendMessage sendMessage = new SendMessage();
-        String messageText = "<b>" + "Аллергенные ингредиенты " + analyzedIngredients.get(0) + "<b>";
+        String messageText = "Подтвержденные аллергены " + analyzedIngredients.get(1) + "\nВозможные аллергены " + analyzedIngredients.get(2);
         sendMessage.setText(messageText);
         sendMessage.setChatId(chatId);
         return sendMessage;
     }
 
-    public Map<Integer, List<String>> analyzeIngredients(List<String> ingredients){
+    public Map<Integer, ArrayList<String>> analyzeIngredients(ArrayList<String> ingredients){
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<List<String>> request = new HttpEntity<List<String>>(ingredients);
-        ResponseEntity<Map<Integer, List<String>>> response = restTemplate
-                .exchange("http://localhost:8090/analyzer/analyze-ingredients", HttpMethod.POST, request, new ParameterizedTypeReference<Map<Integer, List<String>>>(){});
+        ResponseEntity<Map<Integer, ArrayList<String>>> response = restTemplate
+                .exchange("http://localhost:8090/analyzer/analyze-ingredients", HttpMethod.GET, request, new ParameterizedTypeReference<Map<Integer, ArrayList<String>>>(){});
 
 
-        Map<Integer, List<String>> responseBody = response.getBody();
+        Map<Integer, ArrayList<String>> responseBody = response.getBody();
         return responseBody;
 
     }
@@ -189,7 +190,7 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
         List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
         int count = 0;
         for (String ingredient : ingredientsInfo) {
-            if (count % 3 == 0 && count != 0){
+            /*if (count % 3 == 0 && count != 0){
                 rowList.add(keyboardButtonsRow);
                 keyboardButtonsRow = new ArrayList<>();
             }
@@ -198,10 +199,16 @@ public class DietaryRestrictionsTelegramBot extends TelegramLongPollingBot {
             temp.setCallbackData(ingredient);
             keyboardButtonsRow.add(temp);
             count++;
+            System.out.println(count);*/
+            InlineKeyboardButton temp = new InlineKeyboardButton();
+            temp.setText(ingredient);
+            temp.setCallbackData(ingredient);
+            keyboardButtonsRow.add(temp);
         }
-        if (count < 3){
+        /*if (count < 3){
             rowList.add(keyboardButtonsRow);
-        }
+        }*/
+        rowList.add(keyboardButtonsRow);
 
         inlineKeyboardMarkup.setKeyboard(rowList);
         SendMessage sendMessage = new SendMessage();
